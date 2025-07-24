@@ -11,8 +11,8 @@ def menu():
     print("\033[94m2. Buscar estudiante\033[0m")
     print("\033[95m3. Eliminar estudiante\033[0m")
     print("\033[93m4. Análisis de datos\033[0m")
-    print("\033[96m6. Generar reporte PDF de un estudiante\033[0m")
-    print("\033[91m5. Salir\033[0m")
+    print("\033[96m5. Generar reporte PDF de un estudiante\033[0m")
+    print("\033[91m6. Salir\033[0m")
 
 def main():
     estudiantes = cargar_estudiantes()
@@ -115,7 +115,7 @@ def main():
             analisis_datos(estudiantes)
             print(reset)
 
-        elif opcion == "6":
+        elif opcion == "5":
             color = "\033[96m"
             mat = input(f"{color}Matrícula del estudiante para el reporte PDF: {reset}").strip()
             est = buscar_estudiante(estudiantes, mat)
@@ -124,7 +124,7 @@ def main():
             else:
                 print(f"{rojo}Estudiante no encontrado.{reset}")
 
-        elif opcion == "5":
+        elif opcion == "6":
             print("Saliendo del sistema...")
             break
 
