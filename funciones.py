@@ -52,28 +52,97 @@ def buscar_estudiantes_por_carrera(estudiantes, carrera_buscar):
 def eliminar_estudiante(estudiantes, matricula):
     return [e for e in estudiantes if e.matricula != matricula]
 
+def generar_reporte_analisis_pdf(estudiantes):
+    if not estudiantes:
+        print("No hay estudiantes para generar el reporte.")
+        return None
+
+    pdf_filename = "reporte_analisis_general.pdf"
+    doc = SimpleDocTemplate(pdf_filename, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+
+    styles.add(ParagraphStyle(name='SectionHeading',
+                              parent=styles['h2'],
+                              fontSize=14,
+                              leading=18,
+                              spaceAfter=6,
+                              textColor=colors.darkblue))
+
+    title_style = styles['Title']
+    title_style.alignment = 1  
+    story.append(Paragraph("Reporte de Análisis General de Estudiantes", title_style))
+    story.append(Spacer(1, 0.2 * inch))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.black))
+    story.append(Spacer(1, 0.3 * inch))
+
+    df = pd.DataFrame([e.to_dict() for e in estudiantes])
+
+    df.insert(0, 'N°', range(1, len(df) + 1))
+
+    columnas = list(df.columns)
+    datos_tabla = [columnas] + df.round(2).astype(str).values.tolist()
+
+    tabla_estilo = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2E8B57')),  
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F5F5DC')),  
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ])
+
+    tabla = Table(datos_tabla, hAlign='CENTER')
+    tabla.setStyle(tabla_estilo)
+    story.append(Paragraph("Tabla de Estudiantes", styles['SectionHeading']))
+    story.append(tabla)
+    story.append(Spacer(1, 0.4 * inch))
+
+    
+    story.append(Paragraph("Estadísticas Generales", styles['SectionHeading']))
+
+    promedio_general = df['Promedio'].mean()
+    desviacion_std = df['Promedio'].std()
+    nota_maxima = df[['Cal1', 'Cal2', 'Cal3']].max().max()
+    nota_minima = df[['Cal1', 'Cal2', 'Cal3']].min().min()
+    nombre_mejor = df.loc[df['Promedio'].idxmax()]['Nombre']
+    aprobados = sum(1 for e in estudiantes if e.es_aprobado())
+    desaprobados = len(estudiantes) - aprobados
+
+    texto_estadisticas = (
+        f"<b>Promedio general de notas:</b> {promedio_general:.2f}<br/>"
+        f"<b>Desviación estándar del promedio:</b> {desviacion_std:.2f}<br/>"
+        f"<b>Nota máxima del grupo:</b> {nota_maxima:.2f}<br/>"
+        f"<b>Nota mínima del grupo:</b> {nota_minima:.2f}<br/>"
+        f"<b>Estudiante con mayor promedio:</b> {nombre_mejor}<br/>"
+        f"<b>Cantidad de estudiantes aprobados:</b> {aprobados}<br/>"
+        f"<b>Cantidad de estudiantes desaprobados:</b> {desaprobados}<br/>"
+    )
+    story.append(Paragraph(texto_estadisticas, styles['Normal']))
+
+    story.append(Spacer(1, 0.5 * inch))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.black))
+    story.append(Spacer(1, 0.1 * inch))
+    story.append(Paragraph("Reporte generado por el Sistema de Gestión de Estudiantes de Data Max.", styles['Italic']))
+    story.append(Paragraph(f"Fecha de generación: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Italic']))
+
+    try:
+        doc.build(story)
+        print(f"Reporte PDF generado exitosamente: {pdf_filename}")
+        return pdf_filename
+    except Exception as e:
+        print(f"Error al generar el PDF: {e}")
+        return None
+
 def analisis_datos(estudiantes):
     if not estudiantes:
         print("No hay estudiantes registrados.")
         return
+    generar_reporte_analisis_pdf(estudiantes)
 
-    df = pd.DataFrame([e.to_dict() for e in estudiantes])
-    print("\n--- Tabla de estudiantes ---")
-    print(df)
-
-    print("\n--- Análisis ---")
-    # print(f"Edad promedio: {df['Edad'].mean():.2f}")  # 🔴 Eliminado por petición
-    print(f"Promedio general de notas: {df['Promedio'].mean():.2f}")
-    print(f"Desviación estándar del promedio: {df['Promedio'].std():.2f}")
-    print(f"Nota máxima del grupo: {df[['Cal1', 'Cal2', 'Cal3']].max().max():.2f}")
-    print(f"Nota mínima del grupo: {df[['Cal1', 'Cal2', 'Cal3']].min().min():.2f}")
-    print(f"Estudiante con mayor promedio: {df.loc[df['Promedio'].idxmax()]['Nombre']}")
-
-    # ✅ Nuevo: Contar aprobados y desaprobados
-    aprobados = sum(1 for e in estudiantes if e.es_aprobado())
-    desaprobados = len(estudiantes) - aprobados
-    print(f"Cantidad de estudiantes aprobados: {aprobados}")
-    print(f"Cantidad de estudiantes desaprobados: {desaprobados}")
 
 def generar_reporte_pdf(estudiante):
     if not estudiante:
